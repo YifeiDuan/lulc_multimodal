@@ -107,5 +107,8 @@ def batch_encode_img(img_dir="/content/drive/MyDrive/Courses/6.8300/Final Projec
     save_pt_name = f"{mode}.pt"
     if mode == "sample":
         save_pt_name = f"{mode}_{samples_per_class}_per_class.pt"
-    torch.save(all_embeddings, os.path.join(os.path.join(img_dir, "embeddings_img"), save_pt_name))
+    save_dir = os.path.join(os.path.dirname(img_dir), "embeddings_img")
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    torch.save(all_embeddings, os.path.join(save_dir, save_pt_name))
 
