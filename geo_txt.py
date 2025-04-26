@@ -91,11 +91,14 @@ def encode_geo_txt(tif_path):
 
     response = openai.Embedding.create(
         model="text-embedding-3-small",  # The embedding model you want to use
-        input=geo_txt
+        input=geo_txt,
+        encoding_format="float"
     )
 
     # Access the embedding vectors
     embedding = response['data'][0]['embedding']
+
+    return torch.tensor(embedding)
 
 
 
