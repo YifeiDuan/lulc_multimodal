@@ -12,6 +12,7 @@ import torchvision.models as models
 
 from pathlib import Path
 import os, sys
+from tqdm import tqdm
 
 LULC_labels = [
     "AnnualCrop",
@@ -69,7 +70,7 @@ def batch_encode_img(img_dir="/content/drive/MyDrive/Courses/6.8300/Final Projec
                      mode="selected", 
                      samples_per_class=None,
                      df_path=None):
-    valid_modes = ["all", '"selected', "sample"]
+    valid_modes = ["all", "selected", "sample"]
     assert mode in valid_modes, f"choose one valid mode from {valid_modes}"
 
     # Configure all tif file paths
@@ -96,7 +97,7 @@ def batch_encode_img(img_dir="/content/drive/MyDrive/Courses/6.8300/Final Projec
 
     # Get img embeddings for all the tif paths
     all_embeddings = {}
-    for tif_path in all_tif_files:
+    for tif_path in tqdm(all_tif_files, desc="Encoding for: "):
         file_id = tif_path.split("/")[-1].split(".")[0]     # "PATH/AnnualCrop_1.tif" -> "AnnualCrop_1"
         embedding = encode_img(tif_path=tif_path)
 
@@ -106,5 +107,5 @@ def batch_encode_img(img_dir="/content/drive/MyDrive/Courses/6.8300/Final Projec
     save_pt_name = f"{mode}.pt"
     if mode == "sample":
         save_pt_name = f"{mode}_{samples_per_class}_per_class.pt"
-    torch.save(all_embeddings, os.path.join(img_dir, save_pt_name))
+    torch.save(all_embeddings, os.path.join(os.path.join(img_dir, "embeddings_img"), save_pt_name))
 
