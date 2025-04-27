@@ -70,7 +70,7 @@ def batch_encode_img(img_dir="/content/drive/MyDrive/Courses/6.8300/Final Projec
                      mode="selected", 
                      samples_per_class=None,
                      df_path=None):
-    valid_modes = ["all", "selected", "sample"]
+    valid_modes = ["all", "selected", "sample", "top"]
     assert mode in valid_modes, f"choose one valid mode from {valid_modes}"
 
     # Configure all tif file paths
@@ -94,6 +94,13 @@ def batch_encode_img(img_dir="/content/drive/MyDrive/Courses/6.8300/Final Projec
             tif_files = list(Path(class_dir).rglob('*.tif'))[:samples_per_class]        # PosixPath format
             tif_files = [str(f) for f in tif_files]                 # conver path to str
             all_tif_files.extend(tif_files)
+    elif mode == "top":
+        assert isinstance(samples_per_class, int), "provide an int: samples_per_class"
+        for label in LULC_labels:
+            class_dir = os.path.join(img_dir, label)
+            for idx in range(1, samples_per_class+1):
+                tif_file = os.path.join(class_dir, f"{label}_{idx}.tif")
+                all_tif_files.append(tif_file)
 
     # Get img embeddings for all the tif paths
     all_embeddings = {}
