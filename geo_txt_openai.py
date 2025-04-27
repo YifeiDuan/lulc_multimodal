@@ -54,6 +54,8 @@ def gen_geo_txt(tif_path):
     # Get coordinates (lon, lat)
     lon, lat = get_geo_coords(tif_path=tif_path)
 
+    geo_txt = "Unsuccessful generation"
+
     # Generate text
     try:
         #Make your OpenAI API request here
@@ -85,8 +87,7 @@ def gen_geo_txt(tif_path):
     return geo_txt
 
 
-def encode_geo_txt(tif_path):
-    geo_txt = gen_geo_txt(tif_path=tif_path)
+def encode_geo_txt(geo_txt):
 
     try:
         response = client.embeddings.create(
@@ -152,21 +153,28 @@ def batch_encode_geo_txt(img_dir="/content/drive/MyDrive/Courses/6.8300/Final Pr
 
     # Prep for saving img embeddings
     save_pt_name = f"{mode}.pt"
-    if mode == "sample":
+    if (mode == "sample") or (mode == "top"):
         save_pt_name = f"{mode}_{samples_per_class}_per_class.pt"
     save_dir = os.path.join(os.path.dirname(img_dir), "embeddings_geo_txt")
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     
     # Get img embeddings for all the tif paths
+    all_geo_txt = []
     all_embeddings = {}
     for idx, tif_path in tqdm(enumerate(all_tif_files), total=len(all_tif_files), desc="Encoding for: "):
         file_id = tif_path.split("/")[-1].split(".")[0]     # "PATH/AnnualCrop_1.tif" -> "AnnualCrop_1"
-        embedding = encode_geo_txt(tif_path=tif_path)
+        geo_txt = gen_geo_txt(tif_path=tif_path)
+        embedding = encode_geo_txt(geo_txt=geo_txt)
 
+        all_geo_txt.append({
+            "file": file_id,
+            "geo_txt": geo_txt
+        })
         all_embeddings[file_id] = embedding
 
         if ((idx+1)%200 == 0) or (idx == len(all_tif_files)-1):
+            pd.DataFrame.from_records(all_geo_txt).to_csv(os.path.join(save_dir, f"{mode}_{samples_per_class}_per_class_txt.csv"))
             torch.save(all_embeddings, os.path.join(save_dir, save_pt_name))
 
 

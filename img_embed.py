@@ -112,7 +112,7 @@ def batch_encode_img(img_dir="/content/drive/MyDrive/Courses/6.8300/Final Projec
 
     # Save img embeddings
     save_pt_name = f"{mode}.pt"
-    if mode == "sample":
+    if (mode == "sample") or (mode == "top"):
         save_pt_name = f"{mode}_{samples_per_class}_per_class.pt"
     save_dir = os.path.join(os.path.dirname(img_dir), "embeddings_img")
     if not os.path.exists(save_dir):
