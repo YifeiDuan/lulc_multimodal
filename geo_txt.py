@@ -32,8 +32,6 @@ from openai import OpenAI
 key = "?"
 client = OpenAI(api_key=key)
 
-openai.api_key = key
-
 def get_geo_coords(tif_path):
     # e.g. tif_path = "/content/drive/MyDrive/Courses/6.8300/Final Project/EuroSAT_MS/AnnualCrop/AnnualCrop_1.tif"
 
@@ -61,7 +59,7 @@ def gen_geo_txt(tif_path):
         prompt = f"Summarize some information about the geospatial location with (latitude: {lat}, longitude: {lon})"
     
         response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": prompt}
@@ -89,14 +87,27 @@ def gen_geo_txt(tif_path):
 def encode_geo_txt(tif_path):
     geo_txt = gen_geo_txt(tif_path=tif_path)
 
-    response = openai.Embedding.create(
-        model="text-embedding-3-small",  # The embedding model you want to use
-        input=geo_txt,
-        encoding_format="float"
-    )
+    try:
+        response = client.embeddings.create(
+            model="text-embedding-3-small",  # The embedding model you want to use
+            input=geo_txt,
+            encoding_format="float"
+        )
+    except openai.APIError as e:
+        #Handle API error here, e.g. retry or log
+        print(f"OpenAI API returned an API Error: {e}")
+        pass
+    except openai.APIConnectionError as e:
+        #Handle connection error here
+        print(f"Failed to connect to OpenAI API: {e}")
+        pass
+    except openai.RateLimitError as e:
+        #Handle rate limit error (we recommend using exponential backoff)
+        print(f"OpenAI API request exceeded rate limit: {e}")
+        pass
 
     # Access the embedding vectors
-    embedding = response['data'][0]['embedding']
+    embedding = response.data[0].embedding
 
     return torch.tensor(embedding)
 
