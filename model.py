@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 class MLP(nn.Module):
-    def __init__(self, input_dim, output_dim, hidden_layers, hidden_units, activation=nn.ReLU):
+    def __init__(self, input_dim, output_dim=1, hidden_layers=1, hidden_units=1024, activation=nn.ReLU):
         """
         Initialize the Multi-Layer Perceptron.
 

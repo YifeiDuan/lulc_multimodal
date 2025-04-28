@@ -2,6 +2,19 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
 
+LULC_labels_map = {
+    "AnnualCrop": 0,
+    "Forest": 1,
+    "HerbaceousVegetation": 2,
+    "Highway": 3,
+    "Industrial": 4,
+    "Pasture": 5,
+    "PermanentCrop": 6,
+    "Residential": 7,
+    "River": 8,
+    "SeaLake": 9
+}
+
 class UnimodalDataset(Dataset):
     def __init__(self, file_path, ids):
         # Load the dataset from the .pt file
@@ -19,7 +32,7 @@ class UnimodalDataset(Dataset):
                 self.data.append(value)
                 # Add a LULC label
                 label = key.split("_")[0]       # key: e.g. "AnnualCrop_100"
-                self.labels.append(label)
+                self.labels.append(LULC_labels_map[label])
 
         # Convert lists to tensors
         self.data = torch.stack(self.data)
@@ -53,7 +66,7 @@ class EarlyFusionDataset(Dataset):
                 
                 # Add a LULC label
                 label = key.split("_")[0]       # key: e.g. "AnnualCrop_100"
-                self.labels.append(label)
+                self.labels.append(LULC_labels_map[label])
 
         # Convert lists to tensors
         self.data = torch.stack(self.data)
