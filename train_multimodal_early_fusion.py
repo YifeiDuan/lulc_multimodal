@@ -33,25 +33,24 @@ LULC_labels = [
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def load_data(file_path_1, file_path_2, batch_size=16):
-    dataset_size = len(torch.load(file_path_1))
+    sample_per_class = int(len(torch.load(file_path_1))/len(LULC_labels))
 
-    train_size = int(0.7 * dataset_size)
-    test_size = int(0.15 * dataset_size)
-    val_size = dataset_size - train_size - test_size
+    train_size_per_class = int(0.7 * sample_per_class)
+    test_size_per_class = int(0.15 * sample_per_class)
+    val_size_per_class = int(sample_per_class) - train_size_per_class - test_size_per_class
 
     train_ids, val_ids, test_ids = [], [], []
-    for idx in range(1, train_size+1):
+    for idx in range(1, train_size_per_class+1):
         for label in LULC_labels:
             train_ids.append(f"{label}_{idx}")
 
-    for idx in range(train_size+1, train_size+val_size+1):
+    for idx in range(train_size_per_class+1, train_size_per_class+val_size_per_class+1):
         for label in LULC_labels:
             val_ids.append(f"{label}_{idx}")
     
-    for idx in range(train_size+val_size+1, dataset_size+1):
+    for idx in range(train_size_per_class+val_size_per_class+1, sample_per_class+1):
         for label in LULC_labels:
             test_ids.append(f"{label}_{idx}")
-    
 
     # Create dataset instances for each split
     train_dataset = EarlyFusionDataset(file_path_1, file_path_2, train_ids)
@@ -68,21 +67,22 @@ def load_data(file_path_1, file_path_2, batch_size=16):
     return train_loader, val_loader, test_loader
 
 
+
 def train_loop(model, train_loader, val_loader, epochs=50, lr=0.001):
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
-    train_losses = []
-    val_losses = []
-    for epoch in tqdm(epochs, desc="Training: "):
+    train_losses, train_acc = [], []
+    val_losses, val_acc = [], []
+    for epoch in tqdm(range(epochs), desc="Training: "):
         # Training step
         model.train()
         running_loss = 0.0
         correct = 0
         total = 0
         
-        for data, labels, ids in train_loader:
+        for ids, data, labels in train_loader:
             data, labels = data.to(device), labels.to(device)
             optimizer.zero_grad()
             outputs = model(data)
@@ -101,7 +101,7 @@ def train_loop(model, train_loader, val_loader, epochs=50, lr=0.001):
         val_correct = 0
         val_total = 0
         with torch.no_grad():  # Disable gradient calculation
-            for data, labels, ids in val_loader:
+            for ids, data, labels in val_loader:
                 data, labels = data.to(device), labels.to(device)
                 outputs = model(data)
                 loss = criterion(outputs, labels)
@@ -118,8 +118,11 @@ def train_loop(model, train_loader, val_loader, epochs=50, lr=0.001):
               f'Validation Accuracy: {100 * val_correct / val_total:.2f}%')
         train_losses.append(running_loss/len(train_loader))
         val_losses.append(val_loss/len(val_loader))
+        train_acc.append(correct / total)
+        val_acc.append(val_correct / val_total)
     
-    return model, train_losses, val_losses
+    return model, train_losses, val_losses, train_acc, val_acc
+
 
 def evaluation(model, data_loader):
     model.eval()  # Set the model to evaluation mode
@@ -133,7 +136,7 @@ def evaluation(model, data_loader):
     all_labels = []
     all_preds = []
     with torch.no_grad():
-        for data, labels, ids in data_loader:
+        for ids, data, labels in data_loader:
             data, labels = data.to(device), labels.to(device)
             outputs = model(data)
             loss = criterion(outputs, labels)
@@ -159,13 +162,13 @@ def evaluation(model, data_loader):
     return eval_acc, loss, pd.DataFrame.from_dict(eval_records)
 
 
-def plot_train(train_losses, val_losses, save_path):
+def plot_train(train_losses, val_losses, save_path, mode="Loss"):
     plt.figure(figsize=(8, 6))
-    plt.plot(len(val_losses), train_losses, lebel="train")
-    plt.plot(len(val_losses), val_losses, lebel="val")
+    plt.plot(train_losses, label="train")
+    plt.plot(val_losses, label="val")
     plt.xlabel('Epochs')
-    plt.ylabel('Losses')
-    plt.title('Loss Curve')
+    plt.ylabel(mode)
+    plt.title(f'{mode} Curve')
     plt.legend()
     plt.tight_layout()
     plt.savefig(save_path, dpi=300)
@@ -178,7 +181,7 @@ def plot_confusion_matrix(all_labels, all_preds, save_path, acc, loss):
     cm = confusion_matrix(all_labels, all_preds)
 
     # Plotting the confusion matrix
-    plt.figure(figsize=(8, 6))
+    plt.figure(figsize=(8, 8))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=True, yticklabels=True)
     plt.xlabel('Predicted')
     plt.ylabel('True')
@@ -189,7 +192,7 @@ def plot_confusion_matrix(all_labels, all_preds, save_path, acc, loss):
                  horizontalalignment='center',
                  verticalalignment='bottom',
                  fontsize=14, color='green', weight='bold')
-    plt.annotate(f'CrossEntropyloss: {loss * 100:.2f}%', 
+    plt.annotate(f'CrossEntropyloss: {loss:.4f}', 
                  xy=(0.5, 1.10), 
                  xycoords='axes fraction',
                  horizontalalignment='center',
@@ -212,18 +215,20 @@ def train_eval_mlp(file_path_1="/content/drive/MyDrive/Courses/6.8300/Final Proj
                    input_dim_1=2048,
                    input_dim_2=768):
     
-    train_loader, val_loader, test_loader = load_data(file_path_1=file_path_1, file_path_2=file_path_2, batch_size=batch_size)
+    train_loader, val_loader, test_loader = load_data(file_path_1=file_path_1, 
+                                                      file_path_2=file_path_2, 
+                                                      batch_size=batch_size)
 
     model = MLP(input_dim = input_dim_1+input_dim_2, 
-                output_dim=1, 
+                output_dim=len(LULC_labels), 
                 hidden_layers=hidden_layers, 
                 hidden_units=hidden_units,
                 activation=nn.ReLU).to(device)
     
-    model, train_losses, val_losses = train_loop(model=model, 
-                                                train_loader=train_loader, 
-                                                val_loader=val_loader, 
-                                                epochs=epochs, lr=lr)
+    model, train_losses, val_losses, train_acc, val_acc = train_loop(model=model, 
+                                                                    train_loader=train_loader, 
+                                                                    val_loader=val_loader, 
+                                                                    epochs=epochs, lr=lr)
     
     test_acc, test_loss, test_df = evaluation(model=model, 
                                               data_loader=test_loader)
@@ -233,7 +238,12 @@ def train_eval_mlp(file_path_1="/content/drive/MyDrive/Courses/6.8300/Final Proj
     
     plot_train(train_losses, 
                val_losses,
-               os.path.join(output_dir, "loss_curve.jpg"))
+               os.path.join(output_dir, "loss_curve.jpg"),
+               mode="Loss")
+    plot_train(train_acc, 
+               val_acc,
+               os.path.join(output_dir, "acc_curve.jpg"),
+               mode="Accuracy")
     
     plot_confusion_matrix(test_df["labels_true"], 
                           test_df["labels_pred"], 

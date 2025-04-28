@@ -58,7 +58,7 @@ class EarlyFusionDataset(Dataset):
         
         # Iterate over the provided identifiers and select the relevant data points
         for key in ids:
-            if key in data1 and key in data2:
+            if key in data1.keys() and key in data2.keys():
                 self.ids.append(key)
                 # Concatenate the feature vectors from both datasets
                 feature_vector = torch.cat((data1[key], data2[key]), dim=-1)
