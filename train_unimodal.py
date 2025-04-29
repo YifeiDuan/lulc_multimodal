@@ -1,5 +1,5 @@
 from model import MLP
-from dataset import UnimodalDataset, EarlyFusionDataset
+from dataset import UnimodalDataset
 
 import random
 import numpy as np
@@ -32,8 +32,8 @@ LULC_labels = [
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def load_data(file_path_1, file_path_2, batch_size=16):
-    sample_per_class = int(len(torch.load(file_path_1))/len(LULC_labels))
+def load_data(file_path, batch_size=16):
+    sample_per_class = int(len(torch.load(file_path))/len(LULC_labels))
 
     train_size_per_class = int(0.7 * sample_per_class)
     test_size_per_class = int(0.15 * sample_per_class)
@@ -53,9 +53,9 @@ def load_data(file_path_1, file_path_2, batch_size=16):
             test_ids.append(f"{label}_{idx}")
 
     # Create dataset instances for each split
-    train_dataset = EarlyFusionDataset(file_path_1, file_path_2, train_ids)
-    val_dataset = EarlyFusionDataset(file_path_1, file_path_2, val_ids)
-    test_dataset = EarlyFusionDataset(file_path_1, file_path_2, test_ids)
+    train_dataset = UnimodalDataset(file_path, train_ids)
+    val_dataset = UnimodalDataset(file_path, val_ids)
+    test_dataset = UnimodalDataset(file_path, test_ids)
 
     # Create DataLoader for each dataset
     batch_size = batch_size
@@ -68,7 +68,7 @@ def load_data(file_path_1, file_path_2, batch_size=16):
 
 
 
-def train_loop(model, train_loader, val_loader, epochs=50, lr=0.001):
+def train_loop(model, train_loader, val_loader, epochs=10, lr=0.001):
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=lr)
@@ -204,22 +204,19 @@ def plot_confusion_matrix(all_labels, all_preds, save_path, acc, loss):
 
 
 
-def train_eval_mlp(file_path_1="/content/drive/MyDrive/Courses/6.8300/Final Project/embeddings_img/top_200_per_class.pt",
-                   file_path_2="/content/drive/MyDrive/Courses/6.8300/Final Project/embeddings_geo_txt/top_200_per_class.pt",
-                   output_dir="/content/drive/MyDrive/Courses/6.8300/Final Project/results/early_fusion",
+def train_eval_mlp(file_path="/content/drive/MyDrive/Courses/6.8300/Final Project/embeddings_img/top_200_per_class.pt",
+                   output_dir="/content/drive/MyDrive/Courses/6.8300/Final Project/results/resnet_unimodal/",
                    epochs=10,
                    lr=0.001,
                    batch_size=16,
                    hidden_layers=1,
                    hidden_units=[1024],
-                   input_dim_1=2048,
-                   input_dim_2=768):
+                   input_dim=2048):
     
-    train_loader, val_loader, test_loader = load_data(file_path_1=file_path_1, 
-                                                      file_path_2=file_path_2, 
+    train_loader, val_loader, test_loader = load_data(file_path=file_path, 
                                                       batch_size=batch_size)
 
-    model = MLP(input_dim = input_dim_1+input_dim_2, 
+    model = MLP(input_dim = input_dim, 
                 output_dim=len(LULC_labels), 
                 hidden_layers=hidden_layers, 
                 hidden_units=hidden_units,
