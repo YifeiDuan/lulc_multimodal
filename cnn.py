@@ -111,7 +111,7 @@ def batch_load_img(img_dir="/content/drive/MyDrive/Courses/6.8300/Final Project/
 
 
 class CNN(nn.Module):
-    def __init__(self, in_ch=3, output_dim=10):
+    def __init__(self, in_ch=3, output_dim=10, device=torch.device("cpu")):
         super(CNN, self).__init__()
         self.conv = nn.Sequential(
             nn.Conv2d(in_ch, 32, kernel_size=3, stride=1, padding=1),  # 3→32
@@ -121,13 +121,14 @@ class CNN(nn.Module):
             nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),  # 32→64
             nn.ReLU(),
             nn.MaxPool2d(2, 2)   # 32→16
-        )
+        ).to(device)
+        
         self.classifier = nn.Sequential(
             nn.Flatten(),
             nn.Linear(64 * 16 * 16, 256),  # Based on 64 channels, 16x16 spatial
             nn.ReLU(),
             nn.Linear(256, output_dim)  # 10 classes for EuroSAT
-        )
+        ).to(device)
 
     def forward(self, x):
         x = self.conv(x)
@@ -137,8 +138,8 @@ class CNN(nn.Module):
 
 
 class CNN_fusion(nn.Module):
-    def __init__(self, in_ch=3, input_dim_txt=768, output_dim=10):
-        super(CNN, self).__init__()
+    def __init__(self, in_ch=3, input_dim_txt=768, output_dim=10, device=torch.device("cpu")):
+        super(CNN_fusion, self).__init__()
         self.conv = nn.Sequential(
             nn.Conv2d(in_ch, 32, kernel_size=3, stride=1, padding=1),  # 3→32
             nn.ReLU(),
@@ -147,20 +148,20 @@ class CNN_fusion(nn.Module):
             nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),  # 32→64
             nn.ReLU(),
             nn.MaxPool2d(2, 2)   # 32→16
-        )
+        ).to(device)
 
         self.img_adapter = nn.Sequential(
             nn.Flatten(),
             nn.Linear(64 * 16 * 16, 256),  # Based on 64 channels, 16x16 spatial
             nn.ReLU()
-        )
+        ).to(device)
 
         self.txt_adapter = nn.Sequential(
             nn.Linear(input_dim_txt, 256),
             nn.ReLU()
-        )
+        ).to(device)
 
-        self.fc = nn.Linear(512, output_dim)
+        self.fc = nn.Linear(512, output_dim).to(device)
 
     def forward(self, x1, x2):
         x1 = self.conv(x1)

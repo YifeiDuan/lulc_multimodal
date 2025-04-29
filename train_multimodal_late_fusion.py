@@ -224,7 +224,8 @@ def train_eval_model(file_path_1="/content/drive/MyDrive/Courses/6.8300/Final Pr
                             output_dim=len(LULC_labels), 
                             hidden_layers=hidden_layers, 
                             hidden_units=hidden_units,
-                            activation=nn.ReLU).to(device)
+                            activation=nn.ReLU,
+                            device=device)
     
     model, train_losses, val_losses, train_acc, val_acc = train_loop(model=model, 
                                                                     train_loader=train_loader, 

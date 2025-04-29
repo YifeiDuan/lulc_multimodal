@@ -204,7 +204,7 @@ def plot_confusion_matrix(all_labels, all_preds, save_path, acc, loss):
 
 
 
-def train_eval_mlp(file_path="/content/drive/MyDrive/Courses/6.8300/Final Project/embeddings_img/top_200_per_class.pt",
+def train_eval_model(file_path="/content/drive/MyDrive/Courses/6.8300/Final Project/features_img/top_200_per_class.pt",
                    output_dir="/content/drive/MyDrive/Courses/6.8300/Final Project/results/cnn_unimodal/",
                    epochs=10,
                    lr=0.001,
@@ -214,7 +214,8 @@ def train_eval_mlp(file_path="/content/drive/MyDrive/Courses/6.8300/Final Projec
                                                       batch_size=batch_size)
 
     model = CNN(in_ch=3, 
-                output_dim=len(LULC_labels)).to(device)
+                output_dim=len(LULC_labels),
+                device=device)
     
     model, train_losses, val_losses, train_acc, val_acc = train_loop(model=model, 
                                                                     train_loader=train_loader, 

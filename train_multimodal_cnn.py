@@ -216,7 +216,8 @@ def train_eval_model(file_path_1="/content/drive/MyDrive/Courses/6.8300/Final Pr
                                                       file_path_2=file_path_2, 
                                                       batch_size=batch_size)
 
-    model = CNN_fusion(in_ch=3, 
+    model = CNN_fusion(device=device,
+                       in_ch=3, 
                        input_dim_txt=input_dim_txt,
                        output_dim=len(LULC_labels))
     

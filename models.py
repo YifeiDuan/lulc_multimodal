@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 class MLP(nn.Module):
-    def __init__(self, input_dim, output_dim=10, hidden_layers=1, hidden_units=1024, activation=nn.ReLU):
+    def __init__(self, input_dim, output_dim=10, hidden_layers=1, hidden_units=1024, activation=nn.ReLU, device=torch.device("cpu")):
         """
         Initialize the Multi-Layer Perceptron.
 
@@ -34,7 +34,7 @@ class MLP(nn.Module):
         layers.append(nn.Linear(prev_units, output_dim))
 
         # Stack layers into a sequential model
-        self.network = nn.Sequential(*layers)
+        self.network = nn.Sequential(*layers).to(device)
 
     def forward(self, x):
         """
@@ -50,7 +50,7 @@ class MLP(nn.Module):
 
 
 class LateFusionModel(nn.Module):
-    def __init__(self, input_dim_img, input_dim_txt, output_dim=10, hidden_layers=1, hidden_units=1024, activation=nn.ReLU):
+    def __init__(self, input_dim_img, input_dim_txt, output_dim=10, hidden_layers=1, hidden_units=1024, activation=nn.ReLU, device=torch.device("cpu")):
         """
         Initialize the Multi-Layer Perceptron.
 
@@ -78,7 +78,7 @@ class LateFusionModel(nn.Module):
             layers.append(nn.Linear(prev_units, hidden_units[i]))
             layers.append(activation())  # Apply activation after each layer
             prev_units = hidden_units[i]
-        self.img_adaptor = nn.Sequential(*layers)
+        self.img_adaptor = nn.Sequential(*layers).to(device)
 
         # Build the layers for txt_adaptor
         layers = []
@@ -87,10 +87,10 @@ class LateFusionModel(nn.Module):
             layers.append(nn.Linear(prev_units, hidden_units[i]))
             layers.append(activation())  # Apply activation after each layer
             prev_units = hidden_units[i]
-        self.txt_adaptor = nn.Sequential(*layers)
+        self.txt_adaptor = nn.Sequential(*layers).to(device)
 
         # Build the final classifier
-        self.fc = nn.Linear(hidden_units[-1] * 2, output_dim)
+        self.fc = nn.Linear(hidden_units[-1] * 2, output_dim).to(device)
 
     def forward(self, x1, x2):
         """
@@ -110,7 +110,7 @@ class LateFusionModel(nn.Module):
 
 
 class GatedFusionModel(nn.Module):
-    def __init__(self, input_dim_img, input_dim_txt, output_dim=10, hidden_layers=1, hidden_units=1024, activation=nn.ReLU):
+    def __init__(self, input_dim_img, input_dim_txt, output_dim=10, hidden_layers=1, hidden_units=1024, activation=nn.ReLU, device=torch.device("cpu")):
         super(GatedFusionModel, self).__init__()
 
         # Handle case where hidden_units is a single integer or a list
@@ -129,7 +129,7 @@ class GatedFusionModel(nn.Module):
             prev_units = hidden_units[i]
         layers.append(nn.Linear(prev_units, 1)) # Output gate scalar for image modality
         layers.append(nn.Sigmoid())
-        self.img_gate = nn.Sequential(*layers)
+        self.img_gate = nn.Sequential(*layers).to(device)
         
         # Build the layers for txt_gate
         layers = []
@@ -140,10 +140,10 @@ class GatedFusionModel(nn.Module):
             prev_units = hidden_units[i]
         layers.append(nn.Linear(prev_units, 1)) # Output gate scalar for image modality
         layers.append(nn.Sigmoid())
-        self.txt_gate = nn.Sequential(*layers)
+        self.txt_gate = nn.Sequential(*layers).to(device)
         
         # The final classifier
-        self.fc = nn.Linear(input_dim_img + input_dim_txt, output_dim)
+        self.fc = nn.Linear(input_dim_img + input_dim_txt, output_dim).to(device)
         
     def forward(self, x1, x2):
         # Get the gating values (0-1) for each modality
@@ -162,7 +162,7 @@ class GatedFusionModel(nn.Module):
 
 
 class BilinearPoolingModel(nn.Module):
-    def __init__(self, input_dim_img, input_dim_txt, output_dim=10, hidden_layers=1, hidden_units=1024, activation=nn.ReLU):
+    def __init__(self, input_dim_img, input_dim_txt, output_dim=10, hidden_layers=1, hidden_units=1024, activation=nn.ReLU, device=torch.device("cpu")):
         super(BilinearPoolingModel, self).__init__()
 
         # Handle case where hidden_units is a single integer or a list
@@ -179,7 +179,7 @@ class BilinearPoolingModel(nn.Module):
             layers.append(nn.Linear(prev_units, hidden_units[i]))
             layers.append(activation())  # Apply activation after each layer
             prev_units = hidden_units[i]
-        self.img_adaptor = nn.Sequential(*layers)
+        self.img_adaptor = nn.Sequential(*layers).to(device)
 
         # Build the layers for txt_adaptor
         layers = []
@@ -188,10 +188,10 @@ class BilinearPoolingModel(nn.Module):
             layers.append(nn.Linear(prev_units, hidden_units[i]))
             layers.append(activation())  # Apply activation after each layer
             prev_units = hidden_units[i]
-        self.txt_adaptor = nn.Sequential(*layers)
+        self.txt_adaptor = nn.Sequential(*layers).to(device)
 
         # Build the final classifier
-        self.fc = nn.Linear(hidden_units[-1], output_dim)
+        self.fc = nn.Linear(hidden_units[-1], output_dim).to(device)
         
     def forward(self, x1, x2):
         x1 = self.img_adaptor(x1)
