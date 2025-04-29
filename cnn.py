@@ -49,7 +49,7 @@ def load_img(tif_path):
                             std=[0.229, 0.224, 0.225])      # Using the mean and std for ImageNet natural images
     ])
 
-    img_tensor = preprocess(rgb_pil).unsqueeze(0)  # shape: (1, 3, 224, 224)
+    img_tensor = preprocess(rgb_pil)  # shape: (3, 224, 224)
     return img_tensor
 
 

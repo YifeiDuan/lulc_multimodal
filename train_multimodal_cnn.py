@@ -1,5 +1,5 @@
-from cnn import CNN
-from dataset import UnimodalDataset
+from cnn import CNN_fusion
+from dataset import BimodalDataset
 
 import random
 import numpy as np
@@ -32,8 +32,8 @@ LULC_labels = [
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def load_data(file_path, batch_size=16):
-    sample_per_class = int(len(torch.load(file_path))/len(LULC_labels))
+def load_data(file_path_1, file_path_2, batch_size=16):
+    sample_per_class = int(len(torch.load(file_path_1))/len(LULC_labels))
 
     train_size_per_class = int(0.7 * sample_per_class)
     test_size_per_class = int(0.15 * sample_per_class)
@@ -53,9 +53,9 @@ def load_data(file_path, batch_size=16):
             test_ids.append(f"{label}_{idx}")
 
     # Create dataset instances for each split
-    train_dataset = UnimodalDataset(file_path, train_ids)
-    val_dataset = UnimodalDataset(file_path, val_ids)
-    test_dataset = UnimodalDataset(file_path, test_ids)
+    train_dataset = BimodalDataset(file_path_1, file_path_2, train_ids)
+    val_dataset = BimodalDataset(file_path_1, file_path_2, val_ids)
+    test_dataset = BimodalDataset(file_path_1, file_path_2, test_ids)
 
     # Create DataLoader for each dataset
     batch_size = batch_size
@@ -68,7 +68,7 @@ def load_data(file_path, batch_size=16):
 
 
 
-def train_loop(model, train_loader, val_loader, epochs=10, lr=0.001):
+def train_loop(model, train_loader, val_loader, epochs=50, lr=0.001):
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=lr)
@@ -82,10 +82,10 @@ def train_loop(model, train_loader, val_loader, epochs=10, lr=0.001):
         correct = 0
         total = 0
         
-        for ids, data, labels in train_loader:
-            data, labels = data.to(device), labels.to(device)
+        for ids, data_img, data_txt, labels in train_loader:
+            data_img, data_txt, labels = data_img.to(device), data_txt.to(device), labels.to(device)
             optimizer.zero_grad()
-            outputs = model(data)
+            outputs = model(data_img, data_txt)
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
@@ -101,9 +101,9 @@ def train_loop(model, train_loader, val_loader, epochs=10, lr=0.001):
         val_correct = 0
         val_total = 0
         with torch.no_grad():  # Disable gradient calculation
-            for ids, data, labels in val_loader:
-                data, labels = data.to(device), labels.to(device)
-                outputs = model(data)
+            for ids, data_img, data_txt, labels in val_loader:
+                data_img, data_txt, labels = data_img.to(device), data_txt.to(device), labels.to(device)
+                outputs = model(data_img, data_txt)
                 loss = criterion(outputs, labels)
                 val_loss += loss.item()
                 _, predicted = torch.max(outputs, 1)
@@ -136,9 +136,9 @@ def evaluation(model, data_loader):
     all_labels = []
     all_preds = []
     with torch.no_grad():
-        for ids, data, labels in data_loader:
-            data, labels = data.to(device), labels.to(device)
-            outputs = model(data)
+        for ids, data_img, data_txt, labels in data_loader:
+            data_img, data_txt, labels = data_img.to(device), data_txt.to(device), labels.to(device)
+            outputs = model(data_img, data_txt)
             loss = criterion(outputs, labels)
             eval_loss += loss.item()
             _, predicted = torch.max(outputs, 1)
@@ -204,17 +204,21 @@ def plot_confusion_matrix(all_labels, all_preds, save_path, acc, loss):
 
 
 
-def train_eval_mlp(file_path="/content/drive/MyDrive/Courses/6.8300/Final Project/embeddings_img/top_200_per_class.pt",
-                   output_dir="/content/drive/MyDrive/Courses/6.8300/Final Project/results/cnn_unimodal/",
-                   epochs=10,
-                   lr=0.001,
-                   batch_size=16):
+def train_eval_model(file_path_1="/content/drive/MyDrive/Courses/6.8300/Final Project/features_img/top_200_per_class.pt",
+                    file_path_2="/content/drive/MyDrive/Courses/6.8300/Final Project/embeddings_geo_txt/top_200_per_class.pt",
+                    output_dir="/content/drive/MyDrive/Courses/6.8300/Final Project/results/cnn_multimodal",
+                    input_dim_txt=768,
+                    epochs=10,
+                    lr=0.001,
+                    batch_size=16):
     
-    train_loader, val_loader, test_loader = load_data(file_path=file_path, 
+    train_loader, val_loader, test_loader = load_data(file_path_1=file_path_1, 
+                                                      file_path_2=file_path_2, 
                                                       batch_size=batch_size)
 
-    model = CNN(in_ch=3, 
-                output_dim=len(LULC_labels)).to(device)
+    model = CNN_fusion(in_ch=3, 
+                       input_dim_txt=input_dim_txt,
+                       output_dim=len(LULC_labels))
     
     model, train_losses, val_losses, train_acc, val_acc = train_loop(model=model, 
                                                                     train_loader=train_loader, 
