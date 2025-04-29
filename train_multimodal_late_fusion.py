@@ -53,9 +53,9 @@ def load_data(file_path_1, file_path_2, batch_size=16):
             test_ids.append(f"{label}_{idx}")
 
     # Create dataset instances for each split
-    train_dataset = EarlyFusionDataset(file_path_1, file_path_2, train_ids)
-    val_dataset = EarlyFusionDataset(file_path_1, file_path_2, val_ids)
-    test_dataset = EarlyFusionDataset(file_path_1, file_path_2, test_ids)
+    train_dataset = BimodalDataset(file_path_1, file_path_2, train_ids)
+    val_dataset = BimodalDataset(file_path_1, file_path_2, val_ids)
+    test_dataset = BimodalDataset(file_path_1, file_path_2, test_ids)
 
     # Create DataLoader for each dataset
     batch_size = batch_size
@@ -83,9 +83,9 @@ def train_loop(model, train_loader, val_loader, epochs=50, lr=0.001):
         total = 0
         
         for ids, data_img, data_txt, labels in train_loader:
-            data_img, data_txt, labels = data.to(device), labels.to(device)
+            data_img, data_txt, labels = data_img.to(device), data_txt.to(device), labels.to(device)
             optimizer.zero_grad()
-            outputs = model(data)
+            outputs = model(data_img, data_txt)
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
@@ -101,9 +101,9 @@ def train_loop(model, train_loader, val_loader, epochs=50, lr=0.001):
         val_correct = 0
         val_total = 0
         with torch.no_grad():  # Disable gradient calculation
-            for ids, data, labels in val_loader:
-                data, labels = data.to(device), labels.to(device)
-                outputs = model(data)
+            for ids, data_img, data_txt, labels in val_loader:
+                data_img, data_txt, labels = data_img.to(device), data_txt.to(device), labels.to(device)
+                outputs = model(data_img, data_txt)
                 loss = criterion(outputs, labels)
                 val_loss += loss.item()
                 _, predicted = torch.max(outputs, 1)
@@ -136,9 +136,9 @@ def evaluation(model, data_loader):
     all_labels = []
     all_preds = []
     with torch.no_grad():
-        for ids, data, labels in data_loader:
-            data, labels = data.to(device), labels.to(device)
-            outputs = model(data)
+        for ids, data_img, data_txt, labels in data_loader:
+            data_img, data_txt, labels = data_img.to(device), data_txt.to(device), labels.to(device)
+            outputs = model(data_img, data_txt)
             loss = criterion(outputs, labels)
             eval_loss += loss.item()
             _, predicted = torch.max(outputs, 1)
@@ -206,7 +206,7 @@ def plot_confusion_matrix(all_labels, all_preds, save_path, acc, loss):
 
 def train_eval_mlp(file_path_1="/content/drive/MyDrive/Courses/6.8300/Final Project/embeddings_img/top_200_per_class.pt",
                    file_path_2="/content/drive/MyDrive/Courses/6.8300/Final Project/embeddings_geo_txt/top_200_per_class.pt",
-                   output_dir="/content/drive/MyDrive/Courses/6.8300/Final Project/results/early_fusion",
+                   output_dir="/content/drive/MyDrive/Courses/6.8300/Final Project/results/late_fusion",
                    epochs=10,
                    lr=0.001,
                    batch_size=16,
@@ -219,11 +219,12 @@ def train_eval_mlp(file_path_1="/content/drive/MyDrive/Courses/6.8300/Final Proj
                                                       file_path_2=file_path_2, 
                                                       batch_size=batch_size)
 
-    model = MLP(input_dim = input_dim_1+input_dim_2, 
-                output_dim=len(LULC_labels), 
-                hidden_layers=hidden_layers, 
-                hidden_units=hidden_units,
-                activation=nn.ReLU).to(device)
+    model = LateFusionModel(input_dim_img = input_dim_1, 
+                            input_dim_txt = input_dim_2, 
+                            output_dim=len(LULC_labels), 
+                            hidden_layers=hidden_layers, 
+                            hidden_units=hidden_units,
+                            activation=nn.ReLU).to(device)
     
     model, train_losses, val_losses, train_acc, val_acc = train_loop(model=model, 
                                                                     train_loader=train_loader, 
