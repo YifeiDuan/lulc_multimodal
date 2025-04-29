@@ -1,4 +1,4 @@
-from model import MLP
+from models import MLP
 from dataset import UnimodalDataset
 
 import random

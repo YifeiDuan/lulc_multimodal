@@ -78,3 +78,37 @@ class EarlyFusionDataset(Dataset):
     def __getitem__(self, idx):
         return self.ids[idx], self.data[idx], self.labels[idx]
 
+
+class BimodalDataset(Dataset):
+    def __init__(self, file_path_1, file_path_2, ids):
+        # Load the dataset from the .pt file
+        data1 = torch.load(file_path_1)
+        data2 = torch.load(file_path_2)
+
+        self.ids = []
+        self.data_img = []
+        self.data_txt = []
+        self.labels = []
+        
+        # Iterate over the provided identifiers and select the relevant data points
+        for key in ids:
+            if key in data1.keys() and key in data2.keys():
+                self.ids.append(key)
+                # Retrieve the feature vectors from both datasets
+                self.data_img.append(data1[key])
+                self.data_txt.append(data2[key])
+                
+                # Add a LULC label
+                label = key.split("_")[0]       # key: e.g. "AnnualCrop_100"
+                self.labels.append(LULC_labels_map[label])
+
+        # Convert lists to tensors
+        self.data_img = torch.stack(self.data_img)
+        self.data_txt = torch.stack(self.data_txt)
+        self.labels = torch.tensor(self.labels)
+        
+    def __len__(self):
+        return len(self.ids)
+
+    def __getitem__(self, idx):
+        return self.ids[idx], self.data_img[idx], self.data_txt[idx], self.labels[idx]

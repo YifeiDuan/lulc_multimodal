@@ -1,5 +1,5 @@
-from models import MLP
-from dataset import UnimodalDataset, EarlyFusionDataset
+from models import LateFusionModel
+from dataset import BimodalDataset
 
 import random
 import numpy as np
@@ -82,8 +82,8 @@ def train_loop(model, train_loader, val_loader, epochs=50, lr=0.001):
         correct = 0
         total = 0
         
-        for ids, data, labels in train_loader:
-            data, labels = data.to(device), labels.to(device)
+        for ids, data_img, data_txt, labels in train_loader:
+            data_img, data_txt, labels = data.to(device), labels.to(device)
             optimizer.zero_grad()
             outputs = model(data)
             loss = criterion(outputs, labels)
