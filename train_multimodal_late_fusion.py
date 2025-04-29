@@ -204,16 +204,16 @@ def plot_confusion_matrix(all_labels, all_preds, save_path, acc, loss):
 
 
 
-def train_eval_mlp(file_path_1="/content/drive/MyDrive/Courses/6.8300/Final Project/embeddings_img/top_200_per_class.pt",
-                   file_path_2="/content/drive/MyDrive/Courses/6.8300/Final Project/embeddings_geo_txt/top_200_per_class.pt",
-                   output_dir="/content/drive/MyDrive/Courses/6.8300/Final Project/results/late_fusion",
-                   epochs=10,
-                   lr=0.001,
-                   batch_size=16,
-                   hidden_layers=1,
-                   hidden_units=[1024],
-                   input_dim_1=2048,
-                   input_dim_2=768):
+def train_eval_model(file_path_1="/content/drive/MyDrive/Courses/6.8300/Final Project/embeddings_img/top_200_per_class.pt",
+                    file_path_2="/content/drive/MyDrive/Courses/6.8300/Final Project/embeddings_geo_txt/top_200_per_class.pt",
+                    output_dir="/content/drive/MyDrive/Courses/6.8300/Final Project/results/late_fusion",
+                    epochs=10,
+                    lr=0.001,
+                    batch_size=16,
+                    hidden_layers=1,
+                    hidden_units=[1024],
+                    input_dim_1=2048,
+                    input_dim_2=768):
     
     train_loader, val_loader, test_loader = load_data(file_path_1=file_path_1, 
                                                       file_path_2=file_path_2, 
