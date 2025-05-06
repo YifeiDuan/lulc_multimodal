@@ -158,7 +158,7 @@ def batch_encode_geo_txt(img_dir="/content/drive/MyDrive/Courses/6.8300/Final Pr
     save_pt_name = f"{mode}.pt"
     if (mode == "sample") or (mode == "top"):
         save_pt_name = f"{mode}_{samples_per_class}_per_class.pt"
-    save_dir = os.path.join(os.path.dirname(img_dir), "embeddings_geo_txt")
+    save_dir = os.path.join(os.path.dirname(img_dir), "embeddings_geo_txt_gemini")
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     

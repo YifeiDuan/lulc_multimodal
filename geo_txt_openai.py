@@ -30,7 +30,7 @@ import openai
 from openai import OpenAI
 
 
-key = open("/content/drive/My Drive/Courses/6.8300/Final Project/6-8300-key", "r").read().strip("\n")
+key = open("/content/drive/My Drive/Courses/6.8300/Final Project/6-8300-key-openai", "r").read().strip("\n")
 client = OpenAI(api_key=key)
 
 def get_geo_coords(tif_path):
@@ -155,7 +155,7 @@ def batch_encode_geo_txt(img_dir="/content/drive/MyDrive/Courses/6.8300/Final Pr
     save_pt_name = f"{mode}.pt"
     if (mode == "sample") or (mode == "top"):
         save_pt_name = f"{mode}_{samples_per_class}_per_class.pt"
-    save_dir = os.path.join(os.path.dirname(img_dir), "embeddings_geo_txt")
+    save_dir = os.path.join(os.path.dirname(img_dir), "embeddings_geo_txt_openai")
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     
