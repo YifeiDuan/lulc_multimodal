@@ -63,7 +63,7 @@ def gen_geo_txt(tif_path):
     
     try:
         #Make your OpenAI API request here
-        prompt = f"Summarize some information about the geospatial location with (latitude: {lat}, longitude: {lon})"
+        prompt = f"Summarize information about the geospatial location with (latitude: {lat}, longitude: {lon}). Only provide information you are certain about."
     
         response = client.models.generate_content(
             model=model_name, 
